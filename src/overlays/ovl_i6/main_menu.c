@@ -84,6 +84,16 @@ CacheTexInfo s4PlayersCacheTexInfo[] = CACHE_TEX_INFO_COMP(TEX_CACHE_FMT_RGBA16,
 CacheTexInfo sTimeAttackCacheTexInfo[] = CACHE_TEX_INFO_COMP(TEX_CACHE_FMT_RGBA16_TILED, aTimeAttackTex);
 CacheTexInfo sRecordsOptionCacheTexInfo[] = CACHE_TEX_INFO_COMP(TEX_CACHE_FMT_RGBA16, aRecordsOptionTex);
 
+static CacheTexInfo sGpClassicCacheTexInfo[] = CACHE_TEX_INFO_COMP(TEX_CACHE_FMT_RGBA16, aGpClassicTex);
+static CacheTexInfo sGpArcadeCacheTexInfo[] = CACHE_TEX_INFO_COMP(TEX_CACHE_FMT_RGBA16, aGpArcadeTex);
+static CacheTexInfo sGpSurvivorCacheTexInfo[] = CACHE_TEX_INFO_COMP(TEX_CACHE_FMT_RGBA16, aGpSurvivorTex);
+
+static CacheTexInfo* sGpSubModeCacheTexInfos[] = {
+    sGpClassicCacheTexInfo,
+    sGpArcadeCacheTexInfo,
+    sGpSurvivorCacheTexInfo,
+};
+
 static CacheTexInfo* sDifficultyCacheTexInfos[] = {
     sNoviceCacheTexInfo,
     sStandardCacheTexInfo,
@@ -544,6 +554,9 @@ void MainMenu_DifficultyInit(void) {
     for (i = 0; i < 4; i++) {
         TextureCache_LoadCacheTexInfoList_impl(sDifficultyCacheTexInfos[i], false, true);
     }
+    for (i = 0; i < 3; i++) {
+        TextureCache_LoadCacheTexInfoList_impl(sGpSubModeCacheTexInfos[i], false, true);
+    }
 }
 
 void MainMenu_TimeAttackModeInit(void) {
@@ -936,17 +949,16 @@ Gfx* MainMenu_DifficultyDraw(Gfx* gfx, Object* difficultyObj) {
                                      OBJECT_TOP(difficultyObj), TEXTURE_CACHE_DRAW, 0, 0, 1.0f, 1.0f, true);
 
     if (D_800CD384 == 10) {
-        static s8* sGpSubModeNames[] = { "CLASSIC", "ARCADE", "SURVIVOR" };
         for (i = 0; i < 3; i++) {
-            s32 strWidth = Font_GetStringWidth(sGpSubModeNames[i], FONT_SET_3, 0);
-            s32 drawX = ((0x80 - strWidth) / 2) + OBJECT_LEFT(difficultyObj) - temp_s6;
-            s32 drawY = OBJECT_TOP(difficultyObj) + (i * 20) + 0xE;
             if (gGpSubMode == i) {
                 gfx = func_8007DB28(gfx, 0);
             } else {
                 gDPSetPrimColor(gfx++, 0, 0, 255, 255, 255, 255);
             }
-            gfx = Font_DrawString(gfx, drawX, drawY, sGpSubModeNames[i], 0, FONT_SET_3, 0);
+            gfx = TextureCache_DrawList_impl(gfx, sGpSubModeCacheTexInfos[i],
+                                             (OBJECT_LEFT(difficultyObj) - temp_s6) + 0x20,
+                                             OBJECT_TOP(difficultyObj) + (i * 20) + 0xE, TEXTURE_CACHE_DRAW_TINTED,
+                                             false, false, 1.0f, 1.0f, true);
         }
         return gfx;
     }
