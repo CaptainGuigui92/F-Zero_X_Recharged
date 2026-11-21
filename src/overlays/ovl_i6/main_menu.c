@@ -950,13 +950,14 @@ Gfx* MainMenu_DifficultyDraw(Gfx* gfx, Object* difficultyObj) {
 
     if (D_800CD384 == 10) {
         for (i = 0; i < 3; i++) {
+            s32 offsetX = (0x80 - sGpSubModeCacheTexInfos[i]->width) / 2;
             if (gGpSubMode == i) {
                 gfx = func_8007DB28(gfx, 0);
             } else {
                 gDPSetPrimColor(gfx++, 0, 0, 255, 255, 255, 255);
             }
             gfx = TextureCache_DrawList_impl(gfx, sGpSubModeCacheTexInfos[i],
-                                             (OBJECT_LEFT(difficultyObj) - temp_s6) + 0x20,
+                                             (OBJECT_LEFT(difficultyObj) - temp_s6) + offsetX,
                                              OBJECT_TOP(difficultyObj) + (i * 20) + 0xE, TEXTURE_CACHE_DRAW_TINTED,
                                              false, false, 1.0f, 1.0f, true);
         }
