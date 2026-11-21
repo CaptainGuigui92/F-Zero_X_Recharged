@@ -1,6 +1,8 @@
 #include "global.h"
 #include "audio.h"
 #include "fzx_game.h"
+
+s32 gGpSubMode = GP_MODE_CLASSIC;
 #include "fzx_camera.h"
 #include "fzx_course.h"
 #include "src/overlays/ovl_i3/hud.h"

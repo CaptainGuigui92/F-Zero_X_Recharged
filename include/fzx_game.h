@@ -101,6 +101,15 @@ typedef enum TitleDemoState {
     /* 3 */ TITLE_DEMO_START_EXIT,
 } TitleDemoState;
 
+typedef enum GpSubMode {
+    /* 0 */ GP_MODE_CLASSIC,
+    /* 1 */ GP_MODE_ARCADE,
+    /* 2 */ GP_MODE_SURVIVOR,
+    /* 3 */ GP_MODE_MAX,
+} GpSubMode;
+
+extern s32 gGpSubMode;
+
 typedef enum Difficulty {
     /* 0 */ NOVICE,
     /* 1 */ STANDARD,

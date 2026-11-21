@@ -246,6 +246,9 @@ s32 MainMenu_Update(void) {
                     (UNLOCK_EVERYTHING_ROMDATA(Object_Get(OBJECT_MAIN_MENU_UNLOCK_EVERYTHING)) & 0xFFFF) - 0x997A;
                 switch (gSelectedMode) {
                     case MODE_GP_RACE:
+                        Audio_TriggerSystemSE(NA_SE_33);
+                        D_800CD384 = 10;
+                        break;
                     case MODE_TIME_ATTACK:
                     case MODE_VS_BATTLE:
                     case MODE_PRACTICE:
@@ -289,6 +292,32 @@ s32 MainMenu_Update(void) {
                 }
             }
             break;
+        case 10:
+            previous = gGpSubMode;
+            if (gInputPressed & BTN_DOWN) {
+                if (gGpSubMode < GP_MODE_MAX - 1) {
+                    gGpSubMode++;
+                }
+            }
+            if (gInputPressed & BTN_UP) {
+                if (gGpSubMode > 0) {
+                    gGpSubMode--;
+                }
+            }
+            if (previous != gGpSubMode) {
+                Audio_TriggerSystemSE(NA_SE_30);
+            }
+            if (gInputButtonPressed & BTN_B) {
+                D_800CD384 = 0;
+                Audio_TriggerSystemSE(NA_SE_16);
+            } else if ((gInputButtonPressed & BTN_START) &&
+                       (OBJECT_STATE(Object_Get(OBJECT_MAIN_MENU_UNLOCK_EVERYTHING)) == 7)) {
+                break;
+            } else if (gInputButtonPressed & (BTN_A | BTN_START)) {
+                Audio_TriggerSystemSE(NA_SE_33);
+                D_800CD384 = 1;
+            }
+            break;
         case 1:
             previous = gModeSubOption[gSelectedMode];
             if (gInputPressed & BTN_DOWN) {
@@ -324,7 +353,11 @@ s32 MainMenu_Update(void) {
                 Audio_TriggerSystemSE(NA_SE_30);
             }
             if (gInputButtonPressed & BTN_B) {
-                D_800CD384 = 0;
+                if (gSelectedMode == MODE_GP_RACE) {
+                    D_800CD384 = 10;
+                } else {
+                    D_800CD384 = 0;
+                }
                 Audio_TriggerSystemSE(NA_SE_16);
             } else if ((gInputButtonPressed & BTN_START) &&
                        (OBJECT_STATE(Object_Get(OBJECT_MAIN_MENU_UNLOCK_EVERYTHING)) == 7)) {
@@ -901,6 +934,22 @@ Gfx* MainMenu_DifficultyDraw(Gfx* gfx, Object* difficultyObj) {
     temp_s6 = SQ(OBJECT_COUNTER(difficultyObj)) * 2;
     gfx = TextureCache_DrawList_impl(gfx, sSelectModeOptionFlamesCacheTexInfo, OBJECT_LEFT(difficultyObj) - temp_s6,
                                      OBJECT_TOP(difficultyObj), TEXTURE_CACHE_DRAW, 0, 0, 1.0f, 1.0f, true);
+
+    if (D_800CD384 == 10) {
+        static s8* sGpSubModeNames[] = { "CLASSIC", "ARCADE", "SURVIVOR" };
+        for (i = 0; i < 3; i++) {
+            s32 strWidth = Font_GetStringWidth(sGpSubModeNames[i], FONT_SET_3, 0);
+            s32 drawX = ((0x80 - strWidth) / 2) + OBJECT_LEFT(difficultyObj) - temp_s6;
+            s32 drawY = OBJECT_TOP(difficultyObj) + (i * 20) + 0xE;
+            if (gGpSubMode == i) {
+                gfx = func_8007DB28(gfx, 0);
+            } else {
+                gDPSetPrimColor(gfx++, 0, 0, 255, 255, 255, 255);
+            }
+            gfx = Font_DrawString(gfx, drawX, drawY, sGpSubModeNames[i], 0, FONT_SET_3, 0);
+        }
+        return gfx;
+    }
 
     for (i = 0; i < 4; i++) {
         if (gModeSubOption[gSelectedMode] == i) {
