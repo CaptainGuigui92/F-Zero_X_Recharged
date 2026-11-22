@@ -157,6 +157,7 @@ void Save_SaveCharacterSave(CharacterSave* characterSave);
 void func_i2_80102A7C(unk_80141C88_unk_1D*, MachineInfo*);
 
 s32 Save_UpdateCupCompletion(s32 difficulty, s32 cupType, s32 character);
+void Save_SyncModeBadges(s32 saveMode);
 
 void Save_Load(SaveContext* saveContext);
 void Save_LoadSaveSettings(ProfileSave* profileSaves, bool arg1);

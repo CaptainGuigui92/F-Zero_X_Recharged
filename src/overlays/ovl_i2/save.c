@@ -1,6 +1,7 @@
 #include "global.h"
 #include "fzx_game.h"
 #include "fzx_save.h"
+extern s32 gSelectedMode;
 #include "fzx_course.h"
 #include "fzx_machine.h"
 #include ASSET_HEADER(staff_ghost_records.h)
@@ -689,21 +690,27 @@ s32 Save_UpdateCupCompletion(s32 difficulty, s32 cupType, s32 character) {
         }
     } else {
 #endif
-        u16 cupCompletion;
-
         Save_ReadCupSave(cupSave);
         Save_LoadCupSave(cupSave, NULL);
 
-        cupCompletion = cupSave->cupCompletion[difficulty][character / 3];
-        cupCompletion |= (1 << ((character % 3) * 5)) << cupType;
-
-        cupSave->cupCompletion[difficulty][character / 3] = cupCompletion;
-
-        // clang-format off
-        for (i = 0; i < 14; i++) { \
-            cupSave->unk_02[i] = 0;
+        if ((gSelectedMode == MODE_GP_RACE) && ((gGpSubMode == GP_MODE_ARCADE) || (gGpSubMode == GP_MODE_SURVIVOR))) {
+            s32 base = (gGpSubMode == GP_MODE_ARCADE) ? 0 : 4;
+            s32 cbase = (gGpSubMode == GP_MODE_ARCADE) ? 8 : 10;
+            u32 charMask = ((u32) cupSave->unk_02[base]) | ((u32) cupSave->unk_02[base + 1] << 8) | ((u32) cupSave->unk_02[base + 2] << 16) | ((u32) cupSave->unk_02[base + 3] << 24);
+            u16 cupMask = ((u16) cupSave->unk_02[cbase]) | ((u16) cupSave->unk_02[cbase + 1] << 8);
+            charMask |= (1U << character);
+            cupMask |= (u16) (1U << (difficulty * 4 + cupType));
+            cupSave->unk_02[base] = (u8) (charMask & 0xFF);
+            cupSave->unk_02[base + 1] = (u8) ((charMask >> 8) & 0xFF);
+            cupSave->unk_02[base + 2] = (u8) ((charMask >> 16) & 0xFF);
+            cupSave->unk_02[base + 3] = (u8) ((charMask >> 24) & 0xFF);
+            cupSave->unk_02[cbase] = (u8) (cupMask & 0xFF);
+            cupSave->unk_02[cbase + 1] = (u8) ((cupMask >> 8) & 0xFF);
+        } else {
+            u16 cupCompletion = cupSave->cupCompletion[difficulty][character / 3];
+            cupCompletion |= (1 << ((character % 3) * 5)) << cupType;
+            cupSave->cupCompletion[difficulty][character / 3] = cupCompletion;
         }
-        // clang-format on
 
         Save_WriteCupSave(cupSave);
 #ifdef EXPANSION_KIT
@@ -1796,6 +1803,32 @@ void Save_LoadCupSave(CupSave* cupSave, u8* cupCompletion) {
 
     var_a0 = (s8*) cupCompletion;
 
+    if ((gSelectedMode == MODE_GP_RACE) && ((gGpSubMode == GP_MODE_ARCADE) || (gGpSubMode == GP_MODE_SURVIVOR))) {
+        s32 base = (gGpSubMode == GP_MODE_ARCADE) ? 0 : 4;
+        s32 cbase = (gGpSubMode == GP_MODE_ARCADE) ? 8 : 10;
+        u32 charMask = ((u32) cupSave->unk_02[base]) | ((u32) cupSave->unk_02[base + 1] << 8) | ((u32) cupSave->unk_02[base + 2] << 16) | ((u32) cupSave->unk_02[base + 3] << 24);
+        u16 cupMask = ((u16) cupSave->unk_02[cbase]) | ((u16) cupSave->unk_02[cbase + 1] << 8);
+        for (i = 0; i < 4; i++) {
+            for (j = 0; j < 10; j++) {
+                for (k = 0; k < 3; k++) {
+                    s32 ch = j * 3 + k;
+                    for (m = 0; m < 5; m++) {
+                        if (var_a0 != NULL) {
+                            if ((m < 4) && ((charMask >> ch) & 1U) && ((cupMask >> (i * 4 + m)) & 1U)) {
+                                *var_a0 = 1;
+                            } else {
+                                *var_a0 = 0;
+                            }
+                            var_a0++;
+                        }
+                    }
+#ifdef EXPANSION_KIT
+                    var_a0 += 2;
+#endif
+                }
+            }
+        }
+    } else {
     for (i = 0; i < 4; i++) {
         for (j = 0; j < 10; j++) {
             temp = cupSave->cupCompletion[i][j];
@@ -1816,6 +1849,7 @@ void Save_LoadCupSave(CupSave* cupSave, u8* cupCompletion) {
 #endif
             }
         }
+    }
     }
 }
 
@@ -2178,3 +2212,5 @@ s32 Save_SetDDStaffGhostComplete(s32 courseIndex) {
     return 0;
 }
 #endif
+
+

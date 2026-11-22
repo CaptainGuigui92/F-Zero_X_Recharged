@@ -1,3 +1,4 @@
+#include "fzx_save.h"
 #include "global.h"
 #include "fzx_game.h"
 #include "fzx_object.h"
@@ -122,7 +123,121 @@ extern f32 D_800CE748;
 extern f32 D_800CE74C;
 extern f32 D_800CE750;
 
+
+extern s8 gCupNumDifficultiesCleared[];
+extern s32 gSelectedMode;
+
+void Save_SyncModeBadges(s32 saveMode) {
+    s32 i;
+#ifndef EXPANSION_KIT
+    CupSave* cupSave = (CupSave*) gSaveBuffer;
+    ProfileSave* profileSaves = (ProfileSave*) gSaveBuffer;
+#else
+    CupSave* cupSave = &gSaveContext.cupSave;
+    ProfileSave* profileSaves = gSaveContext.profileSaves;
+#endif
+    u8 classicBadges[4];
+    u8 arcByte;
+    u8 surByte;
+    u16 checksum;
+
+    Save_ReadProfileSaves(profileSaves);
+    for (i = 0; i < 4; i++) {
+        classicBadges[i] = profileSaves[0].saveSettings.cupDifficultiesCleared[i];
+    }
+
+    Save_ReadCupSave(cupSave);
+    arcByte = cupSave->unk_02[12];
+    surByte = cupSave->unk_02[13];
+
+    /* Pre-seed sauvegarde Queen Cup Novice Arcade avec Dr. Stewart si sauvegarde neuve */
+    if ((arcByte == 0) && (cupSave->unk_02[0] == 0) && (cupSave->unk_02[8] == 0)) {
+        u32 stewartBit = (1U << 1);
+        u16 queenNoviceBit = (u16) (1U << (NOVICE * 4 + QUEEN_CUP));
+        cupSave->unk_02[0] = (u8) (stewartBit & 0xFF);
+        cupSave->unk_02[1] = (u8) ((stewartBit >> 8) & 0xFF);
+        cupSave->unk_02[2] = (u8) ((stewartBit >> 16) & 0xFF);
+        cupSave->unk_02[3] = (u8) ((stewartBit >> 24) & 0xFF);
+        cupSave->unk_02[8] = (u8) (queenNoviceBit & 0xFF);
+        cupSave->unk_02[9] = (u8) ((queenNoviceBit >> 8) & 0xFF);
+        arcByte = (1 << 2);
+        cupSave->unk_02[12] = arcByte;
+        Save_WriteCupSave(cupSave);
+    }
+
+    if ((classicBadges[1] > 0) && (arcByte == 0) && ((cupSave->unk_02[0] != 0) || (cupSave->unk_02[8] != 0))) {
+        u8 v = classicBadges[1];
+        if (v > 3) v = 3;
+        arcByte = (u8) ((v & 3) << 2);
+        cupSave->unk_02[12] = arcByte;
+        Save_WriteCupSave(cupSave);
+
+        classicBadges[1] = 0;
+        for (i = 0; i < 4; i++) {
+            profileSaves[0].saveSettings.cupDifficultiesCleared[i] = classicBadges[i];
+            profileSaves[1].saveSettings.cupDifficultiesCleared[i] = classicBadges[i];
+        }
+        checksum = Save_CalculateSaveSettingsChecksum(profileSaves);
+        for (i = 0; i < 2; i++) {
+            Save_WriteSaveSettings(profileSaves, i, checksum);
+        }
+    }
+
+    if (saveMode == 1) {
+        if ((gSelectedMode == MODE_GP_RACE) && (gGpSubMode == GP_MODE_ARCADE)) {
+            arcByte = 0;
+            for (i = 0; i < 4; i++) {
+                s32 v = gCupNumDifficultiesCleared[i];
+                if (v < 0) v = 0;
+                if (v > 3) v = 3;
+                arcByte |= (u8) ((v & 3) << (i * 2));
+            }
+            cupSave->unk_02[12] = arcByte;
+            Save_WriteCupSave(cupSave);
+        } else if ((gSelectedMode == MODE_GP_RACE) && (gGpSubMode == GP_MODE_SURVIVOR)) {
+            surByte = 0;
+            for (i = 0; i < 4; i++) {
+                s32 v = gCupNumDifficultiesCleared[i];
+                if (v < 0) v = 0;
+                if (v > 3) v = 3;
+                surByte |= (u8) ((v & 3) << (i * 2));
+            }
+            cupSave->unk_02[13] = surByte;
+            Save_WriteCupSave(cupSave);
+        } else {
+            for (i = 0; i < 4; i++) {
+                profileSaves[0].saveSettings.cupDifficultiesCleared[i] = gCupNumDifficultiesCleared[i];
+                profileSaves[1].saveSettings.cupDifficultiesCleared[i] = gCupNumDifficultiesCleared[i];
+            }
+            checksum = Save_CalculateSaveSettingsChecksum(profileSaves);
+            for (i = 0; i < 2; i++) {
+                Save_WriteSaveSettings(profileSaves, i, checksum);
+            }
+        }
+    } else {
+        if ((gSelectedMode == MODE_GP_RACE) && (gGpSubMode == GP_MODE_ARCADE)) {
+            for (i = 0; i < 4; i++) {
+                gCupNumDifficultiesCleared[i] = (s8) ((arcByte >> (i * 2)) & 3);
+            }
+        } else if ((gSelectedMode == MODE_GP_RACE) && (gGpSubMode == GP_MODE_SURVIVOR)) {
+            for (i = 0; i < 4; i++) {
+                gCupNumDifficultiesCleared[i] = (s8) ((surByte >> (i * 2)) & 3);
+            }
+        } else {
+            for (i = 0; i < 4; i++) {
+                gCupNumDifficultiesCleared[i] = (s8) classicBadges[i];
+            }
+        }
+    }
+}
+
 void MainMenu_Init(void) {
+    static s32 sHasBooted = 0;
+    if (sHasBooted) {
+        Save_SyncModeBadges(1);
+    }
+    sHasBooted = 1;
+    Save_SyncModeBadges(0);
     D_800CCFE8 = 3;
 #ifdef EXPANSION_KIT
     D_800CE748 = D_800CE74C = D_800CE750 = 0.1f;
@@ -181,6 +296,7 @@ const s32 kDefaultSubOptionLimits[] = { 2, 1, 0, 2, 0, 2, 0, 0 };
 const s32 kMaxSubOptionLimits[] = { 3, 1, 0, 2, 0, 3, 0, 0 };
 
 s32 MainMenu_Update(void) {
+    static s32 sLastGpSubMode = -1;
     s32 previous;
     bool var_v1_2;
 
@@ -191,6 +307,10 @@ s32 MainMenu_Update(void) {
     Controller_SetGlobalInputs(&gSharedController);
     if (OBJECT_STATE(Object_Get(OBJECT_MAIN_MENU_BACKGROUND)) >= 3) {
         return gGameMode;
+    }
+    if (sLastGpSubMode != gGpSubMode) {
+        sLastGpSubMode = gGpSubMode;
+        Save_SyncModeBadges(0);
     }
     switch (D_800CD384) {
         case 0:
