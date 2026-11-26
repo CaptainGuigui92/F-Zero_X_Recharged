@@ -545,11 +545,25 @@ void MachineSelect_Init(void) {
     func_8008969C();
     gMachineSelectState = MACHINE_SELECT_ACTIVE;
 
+    {
+        s32 badges = func_8007E008();
+        if (gPlayerSelectionLock[3] > badges) badges = gPlayerSelectionLock[3];
+        sMachinesUnlocked = ((badges / 3) * 6) + 6;
+    }
+    {
+        s32 badges = func_8007E008();
+        if (gPlayerSelectionLock[3] > badges) badges = gPlayerSelectionLock[3];
+        sMachinesUnlocked = ((badges / 3) * 6) + 6;
+    }
+    {
+        s32 b = func_8007E008();
+        if (gPlayerSelectionLock[3] > b) b = gPlayerSelectionLock[3];
+        sMachinesUnlocked = ((b / 3) * 6) + 6;
+    }
     for (i = 0; i < 4; i++) {
         gPlayerSelectionLock[i] = SELECTION_FREE;
         sMachineSelectIndex[i] = Character_GetSlotFromCharacter(gRacers[i].character);
     }
-    sMachinesUnlocked = ((func_8007E008() / 3) * 6) + 6;
     if (gSettingEverythingUnlocked) {
         sMachinesUnlocked = 30;
     }

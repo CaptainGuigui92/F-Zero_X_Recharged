@@ -327,6 +327,7 @@ void CourseSelect_Init(void) {
     sCourseSelectState = COURSE_SELECT_CUP_SELECT;
 #endif
     sSelectedGhostOption = sGhostOptionTypeMap[gCurrentGhostType];
+    gCupSelectOption = 0;
     sLastCourseIndex = -1;
 
 #ifdef EXPANSION_KIT
@@ -386,6 +387,9 @@ void CourseSelect_Init(void) {
         }
         gCourseIndex = k;
     }
+    if (gSelectedMode == MODE_GP_RACE) { gCupSelectOption = 0; sCourseSelectTrackNo = 0; gCourseIndex = 0; }
+    if (gSelectedMode == MODE_GP_RACE) { gCupSelectOption = 0; sCourseSelectTrackNo = 0; gCourseIndex = 0; }
+    if (gSelectedMode == MODE_GP_RACE) { gCupSelectOption = 0; sCourseSelectTrackNo = 0; gCourseIndex = 0; }
     CourseSelect_UpdateUnlockedGhosts();
 #ifndef EXPANSION_KIT
     var_v1 = gUnlockableLevel;
@@ -552,7 +556,10 @@ s32 CourseSelect_Update(void) {
         return gGameMode;
     }
     if ((gSelectedMode == MODE_TIME_ATTACK) && (gGameMode != GAMEMODE_FLX_RECORDS_COURSE_SELECT)) {
-        CourseSelect_UpdateUnlockedGhosts();
+        if (gSelectedMode == MODE_GP_RACE) { gCupSelectOption = 0; sCourseSelectTrackNo = 0; gCourseIndex = 0; }
+    if (gSelectedMode == MODE_GP_RACE) { gCupSelectOption = 0; sCourseSelectTrackNo = 0; gCourseIndex = 0; }
+    if (gSelectedMode == MODE_GP_RACE) { gCupSelectOption = 0; sCourseSelectTrackNo = 0; gCourseIndex = 0; }
+    CourseSelect_UpdateUnlockedGhosts();
     }
     Controller_SetGlobalInputs(&gSharedController);
     switch (sCourseSelectState) {

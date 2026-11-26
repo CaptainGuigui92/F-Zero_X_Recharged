@@ -3910,7 +3910,8 @@ Gfx* Menus_DrawRaceIntroDisplay(Gfx* gfx, s32 left, s32 top, s32 paddingSize) {
     s32 lry;
 
     if (gGameMode == GAMEMODE_GP_RACE) {
-        headerWidth = Font_GetStringWidth("GP RACE", FONT_SET_3, 1);
+        const char* gpLabel = (gGpSubMode == GP_MODE_ARCADE) ? "GP ARCADE" : ((gGpSubMode == GP_MODE_SURVIVOR) ? "GP MANIAC" : "GP CLASSIC");
+        headerWidth = Font_GetStringWidth(gpLabel, FONT_SET_3, 1);
         strWidth = Font_GetStringWidth(gDifficultyNames[gDifficulty], FONT_SET_3, 1);
     } else if (gGameMode == GAMEMODE_PRACTICE) {
         headerWidth = Font_GetStringWidth("PRACTICE", FONT_SET_3, 1);
@@ -3959,13 +3960,14 @@ Gfx* Menus_DrawRaceIntroDisplay(Gfx* gfx, s32 left, s32 top, s32 paddingSize) {
     }
 
     if (gGameMode == GAMEMODE_GP_RACE) {
+        const char* gpLabel = (gGpSubMode == GP_MODE_ARCADE) ? "GP ARCADE" : ((gGpSubMode == GP_MODE_SURVIVOR) ? "GP MANIAC" : "GP CLASSIC");
         gDPPipeSync(gfx++);
         gDPSetPrimColor(gfx++, 0, 0, 0, 0, 0, 255);
-        gfx = Font_DrawString(gfx, (left - (Font_GetStringWidth("GP RACE", FONT_SET_3, 1) / 2)) + 2, top - 14,
-                              "GP RACE", 1, FONT_SET_3, 0);
+        gfx = Font_DrawString(gfx, (left - (Font_GetStringWidth(gpLabel, FONT_SET_3, 1) / 2)) + 2, top - 14,
+                              gpLabel, 1, FONT_SET_3, 0);
         gDPPipeSync(gfx++);
         gDPSetPrimColor(gfx++, 0, 0, 250, 250, 0, 255);
-        gfx = Font_DrawString(gfx, left - (Font_GetStringWidth("GP RACE", FONT_SET_3, 1) / 2), top - 16, "GP RACE", 1,
+        gfx = Font_DrawString(gfx, left - (Font_GetStringWidth(gpLabel, FONT_SET_3, 1) / 2), top - 16, gpLabel, 1,
                               FONT_SET_3, 0);
     } else if (gGameMode == GAMEMODE_PRACTICE) {
         gDPPipeSync(gfx++);
@@ -4274,6 +4276,8 @@ const char* sCharacterNames[] = {
 #endif
 
 Gfx* Menus_DrawResultsCharacterName(Gfx* gfx, s32 highlightType, s32 character, s32 left, s32 top) {
+    gDPPipeSync(gfx++);
+    gDPSetTextureLUT(gfx++, G_TT_NONE);
     gfx = Menus_SetOptionColor(gfx, highlightType);
     return Font_DrawString(gfx, left, top, sCharacterNames[character], 1, FONT_SET_4, 0);
 }
@@ -5671,14 +5675,36 @@ Gfx* Menus_Draw(Gfx* gfx) {
             }
         }
 
+        if ((gGameMode == GAMEMODE_GP_RACE) &&
+            ((gGpSubMode == GP_MODE_ARCADE) || (gGpSubMode == GP_MODE_SURVIVOR))) {
+            extern s8 gTotalLives[];
+            if (gPlayerLives[0] == gTotalLives[gDifficulty]) {
+                sPlayer1Lives = 3 - gDifficulty;
+                gPlayerLives[0] = sPlayer1Lives;
+            }
+        }
+
         // CRASHED
         if (!(gRacers[playerIndex].stateFlags & RACER_STATE_FINISHED) &&
             (gRacers[playerIndex].stateFlags & RACER_STATE_CRASHED)) {
+            if ((gGameMode == GAMEMODE_GP_RACE) && (gGpSubMode == GP_MODE_ARCADE) &&
+                (sPlayerGameoverState[0] == PLAYER_GAMEOVER_NONE) &&
+                !(gControllers[gPlayerControlPorts[0]].buttonPressed & BTN_START)) {
+                // Spectator mode in Arcade until START is pressed
+            } else {
             if (sPlayerGameoverState[0] == PLAYER_GAMEOVER_NONE) {
                 sPlayerRetireTimer[0] = 0;
                 sPlayerRetireRelativeLeftPos[0] = 200.0f;
                 sPlayerRetireHorizontalSpeed[0] = -20.0f;
                 sPlayerGameoverState[0] = PLAYER_GAMEOVER_CRASHED;
+                if ((gGameMode == GAMEMODE_GP_RACE) && (gGpSubMode == GP_MODE_ARCADE)) {
+                    func_8008AA8C();
+                    for (i = 0; i < gTotalRacers; i++) {
+                        if (gRacersByPosition[i]->stateFlags & RACER_STATE_FINISHED) {
+                            gRacersByPosition[i]->points += gRacePositionPoints[i];
+                        }
+                    }
+                }
             }
             if ((gGameMode == GAMEMODE_GP_RACE) && (sPlayer1Lives <= 0)) {
                 switch (sPlayerGameoverState[0]) {
@@ -5726,6 +5752,7 @@ Gfx* Menus_Draw(Gfx* gfx) {
                         }
                     }
                 }
+            }
             }
         }
     } else { // VS MODE
